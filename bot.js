@@ -331,3 +331,14 @@ bot.on("contact", (msg) => {
 bot.on("polling_error", (err) => console.error("Polling error:", err.message));
 
 console.log(`✅ ${CLINIC.name} boti ishga tushdi...`);
+// Foydalanuvchi xabar yozganda javob berish
+bot.on('message', (msg) => {
+    const chatId = msg.chat.id;
+    const text = msg.text;
+
+    if (text === '/start') {
+        bot.sendMessage(chatId, `Assalomu alaykum! ${CLINIC.name} botiga xush kelibsiz.\nManzil: ${CLINIC.address}\nTel: ${CLINIC.phone}`);
+    } else {
+        bot.sendMessage(chatId, "Hozircha faqat /start buyrug'iga javob bera olaman.");
+    }
+});
