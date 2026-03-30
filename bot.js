@@ -8,10 +8,10 @@ const bot = new TelegramBot(TOKEN, { polling: true });
 
 // ─── CLINIC CONFIG ─── Edit this section for each client ───────────────────
 const CLINIC = {
-  name: "Tashkent International Clinic",
-  address: "Sariko'l ko'chasi 38, Toshkent, O'zbekiston",
-  phone: "+998 78 120 11 44",
-  Sayt: "tashclinic.org",
+  name: "Salomatlik Klinikasi",
+  address: "Toshkent, Yunusobod tumani, 5-mavze, 12-uy",
+  phone: "+998 71 123 45 67",
+  whatsapp: "+998 90 123 45 67",
   workingHours: {
     "Dushanba – Juma": "08:00 – 20:00",
     "Shanba":          "09:00 – 17:00",
@@ -91,7 +91,7 @@ Qoidalar:
         }
       });
     });
-    req.on("error", () => resolve(null));
+    req.on("error", (e) => { console.error("HTTPS error:", e.message); resolve(null); });
     req.write(body);
     req.end();
   });
