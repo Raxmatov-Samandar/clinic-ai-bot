@@ -2,91 +2,93 @@ const TelegramBot = require("node-telegram-bot-api");
 const https = require("https");
 const http = require("http");
 
-const TOKEN = process.env.BOT_TOKEN;
-const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
-const bot = new TelegramBot(TOKEN, { polling: true });
+// ─── ENV ─────────────────────────────────────────────────────────────────────
+const TOKEN          = process.env.BOT_TOKEN;
+const CLAUDE_KEY     = process.env.CLAUDE_API_KEY;
+const ADMIN_ID       = process.env.ADMIN_CHAT_ID;
+const WEBHOOK_URL    = process.env.WEBHOOK_URL; // https://your-app.onrender.com
 
-// ─── CLINIC CONFIG ─── Edit this section for each client ───────────────────
+// ─── CLINIC CONFIG ────────────────────────────────────────────────────────────
 const CLINIC = {
-  name: "Salomatlik Klinikasi",
-  address: "Toshkent, Yunusobod tumani, 5-mavze, 12-uy",
-  phone: "+998 71 123 45 67",
+  name:     "Salomatlik Klinikasi",
+  address:  "Toshkent, Yunusobod tumani, 5-mavze, 12-uy",
+  phone:    "+998 71 123 45 67",
   whatsapp: "+998 90 123 45 67",
+  mapLat:   41.2995,
+  mapLng:   69.2401,
   workingHours: {
     "Dushanba – Juma": "08:00 – 20:00",
     "Shanba":          "09:00 – 17:00",
     "Yakshanba":       "Dam olish kuni",
   },
-  services: [
-    { name: "Terapevt (umumiy shifokor)", price: "80,000 so'm" },
-    { name: "Kardiolog",                  price: "120,000 so'm" },
-    { name: "Nevropatolog",               price: "120,000 so'm" },
-    { name: "Ginekolog",                  price: "100,000 so'm" },
-    { name: "Urolog",                     price: "100,000 so'm" },
-    { name: "Pediatr (bolalar shifokori)",price: "90,000 so'm" },
-    { name: "UZI tekshiruvi",             price: "60,000 so'mdan" },
-    { name: "Qon tahlili (umumiy)",       price: "35,000 so'm" },
-    { name: "Qon tahlili (to'liq panel)", price: "150,000 so'm" },
-    { name: "Kardiogramma (EKG)",         price: "50,000 so'm" },
-  ],
+  // Har bir shifokor uchun telegram_id ni klinikadan oling
+  // Agar yo'q bo'lsa — null qoldiring, admin ga ketadi
   doctors: [
-    { name: "Dr. Aziz Karimov",    spec: "Terapevt",    exp: "15 yil tajriba" },
-    { name: "Dr. Malika Yusupova", spec: "Kardiolog",    exp: "12 yil tajriba" },
-    { name: "Dr. Bobur Toshmatov", spec: "Nevropatolog", exp: "10 yil tajriba" },
-    { name: "Dr. Nodira Aliyeva",  spec: "Ginekolog",    exp: "18 yil tajriba" },
-    { name: "Dr. Sardor Xoliqov",  spec: "Urolog",       exp: "8 yil tajriba"  },
-    { name: "Dr. Zulfiya Raximova",spec: "Pediatr",      exp: "14 yil tajriba" },
+    { id: 1,  name: "Dr. Aziz Karimov",     spec: "Terapevt",     exp: "15 yil", price: "80,000 so'm",  telegram_id: null },
+    { id: 2,  name: "Dr. Malika Yusupova",  spec: "Kardiolog",     exp: "12 yil", price: "120,000 so'm", telegram_id: null },
+    { id: 3,  name: "Dr. Bobur Toshmatov",  spec: "Nevropatolog",  exp: "10 yil", price: "120,000 so'm", telegram_id: null },
+    { id: 4,  name: "Dr. Nodira Aliyeva",   spec: "Ginekolog",     exp: "18 yil", price: "100,000 so'm", telegram_id: null },
+    { id: 5,  name: "Dr. Sardor Xoliqov",   spec: "Urolog",        exp: "8 yil",  price: "100,000 so'm", telegram_id: null },
+    { id: 6,  name: "Dr. Zulfiya Raximova", spec: "Pediatr",       exp: "14 yil", price: "90,000 so'm",  telegram_id: null },
+    { id: 7,  name: "Dr. Kamol Mirzayev",   spec: "Oftalmolog",    exp: "11 yil", price: "110,000 so'm", telegram_id: null },
+    { id: 8,  name: "Dr. Dilnoza Xasanova", spec: "Dermatolog",    exp: "9 yil",  price: "100,000 so'm", telegram_id: null },
+    { id: 9,  name: "Dr. Jasur Tursunov",   spec: "Ortoped",       exp: "13 yil", price: "120,000 so'm", telegram_id: null },
+    { id: 10, name: "Dr. Maftuna Ergasheva",spec: "Endokrinolog",  exp: "10 yil", price: "110,000 so'm", telegram_id: null },
+  ],
+  services: [
+    { name: "Terapevt maslahati",     price: "80,000 so'm"   },
+    { name: "Kardiolog maslahati",    price: "120,000 so'm"  },
+    { name: "UZI tekshiruvi",         price: "60,000 so'mdan"},
+    { name: "Qon tahlili (umumiy)",   price: "35,000 so'm"   },
+    { name: "Qon tahlili (to'liq)",   price: "150,000 so'm"  },
+    { name: "EKG",                    price: "50,000 so'm"   },
+    { name: "MRT",                    price: "350,000 so'm"  },
+    { name: "Rentgen",                price: "45,000 so'm"   },
+    { name: "Ginekolog maslahati",    price: "100,000 so'm"  },
+    { name: "Pediatr maslahati",      price: "90,000 so'm"   },
+    { name: "Oftalmolog maslahati",   price: "110,000 so'm"  },
+    { name: "Dermatolog maslahati",   price: "100,000 so'm"  },
   ],
 };
-// ────────────────────────────────────────────────────────────────────────────
 
-// ── Claude AI funksiyasi ──────────────────────────────────────────────────────
-async function askClaude(userQuestion) {
-  if (!CLAUDE_API_KEY) return null;
+// ─── BOT SETUP ───────────────────────────────────────────────────────────────
+const bot = WEBHOOK_URL
+  ? new TelegramBot(TOKEN)
+  : new TelegramBot(TOKEN, { polling: true });
 
-  const systemPrompt = `Sen ${CLINIC.name} klinikasining AI yordamchisisisan.
-Faqat shu klinika haqida ma'lumot ber. Qisqa, aniq, do'stona. Uzbek tilida gapir.
+// ─── STATE ───────────────────────────────────────────────────────────────────
+const userState = {}; // chatId → { step, data }
 
-Klinika ma'lumotlari:
-- Nomi: ${CLINIC.name}
-- Manzil: ${CLINIC.address}
-- Telefon: ${CLINIC.phone}
-- Ish vaqti: ${Object.entries(CLINIC.workingHours).map(([k,v]) => `${k}: ${v}`).join(", ")}
-- Xizmatlar: ${CLINIC.services.map(s => `${s.name} — ${s.price}`).join(", ")}
-- Shifokorlar: ${CLINIC.doctors.map(d => `${d.name} (${d.spec})`).join(", ")}
-
-Qoidalar:
-1. Tibbiy tashxis qo'yma — shifokorga murojaat qilishni tavsiya et
-2. Qabul uchun "Qabulga yozilish" tugmasini bosishni ayt
-3. Javob 2-4 jumladan oshmasin
-4. Klinikaga aloqasiz savollarga: "Bu haqda shifokorga murojaat qiling" de`;
-
+// ─── AI CLAUDE ───────────────────────────────────────────────────────────────
+async function askClaude(messages, systemPrompt) {
+  if (!CLAUDE_KEY) return null;
   return new Promise((resolve) => {
     const body = JSON.stringify({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 300,
+      max_tokens: 800,
       system: systemPrompt,
-      messages: [{ role: "user", content: userQuestion }],
+      messages,
     });
-
     const req = https.request({
       hostname: "api.anthropic.com",
       path: "/v1/messages",
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": CLAUDE_API_KEY,
+        "x-api-key": CLAUDE_KEY,
         "anthropic-version": "2023-06-01",
         "Content-Length": Buffer.byteLength(body),
       },
     }, (res) => {
-      let data = "";
-      res.on("data", (c) => (data += c));
+      let d = "";
+      res.on("data", (c) => (d += c));
       res.on("end", () => {
         try {
-          const parsed = JSON.parse(data);
-          resolve(parsed.content?.[0]?.text || null);
-        } catch {
+          const p = JSON.parse(d);
+          if (p.error) console.error("Claude error:", JSON.stringify(p.error));
+          resolve(p.content?.[0]?.text || null);
+        } catch(e) {
+          console.error("Parse error:", e.message);
           resolve(null);
         }
       });
@@ -97,107 +99,151 @@ Qoidalar:
   });
 }
 
-// Track appointment flow
-const appointmentFlow = {};
-
-// ── Main menu ─────────────────────────────────────────────────────────────────
+// ─── MENUS ───────────────────────────────────────────────────────────────────
 function mainMenu() {
   return {
     reply_markup: {
       keyboard: [
         ["📋 Xizmatlar va narxlar", "🕐 Ish vaqti"],
         ["👨‍⚕️ Shifokorlar",          "📅 Qabulga yozilish"],
-        ["📍 Manzil",               "📞 Bog'lanish"],
-        ["🤖 AI maslahat"],
+        ["📍 Manzil",               "📞 Operator"],
+        ["🤖 AI Maslahatchi"],
       ],
       resize_keyboard: true,
     },
   };
 }
 
-// ── Formatters ────────────────────────────────────────────────────────────────
-function servicesText() {
-  let t = `🏥 *${CLINIC.name} — Xizmatlar va narxlar*\n\n`;
-  CLINIC.services.forEach((s) => { t += `• ${s.name}\n  💰 ${s.price}\n\n`; });
-  t += "💡 Narxlar o'zgarishi mumkin. Aniq ma'lumot uchun qo'ng'iroq qiling.";
-  return t;
-}
-function hoursText() {
-  let t = `🕐 *Ish vaqtimiz*\n\n`;
-  for (const [d, v] of Object.entries(CLINIC.workingHours)) t += `📅 *${d}:* ${v}\n`;
-  return t + `\n📞 ${CLINIC.phone}`;
-}
-function doctorsText() {
-  let t = `👨‍⚕️ *Bizning shifokorlar*\n\n`;
-  CLINIC.doctors.forEach((d) => { t += `🩺 *${d.name}*\n   ${d.spec} | ${d.exp}\n\n`; });
-  return t;
+function cancelMenu() {
+  return {
+    reply_markup: {
+      keyboard: [["❌ Bekor qilish"]],
+      resize_keyboard: true,
+      one_time_keyboard: true,
+    },
+  };
 }
 
-// ── /start ────────────────────────────────────────────────────────────────────
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function send(chatId, text, extra = {}) {
+  return bot.sendMessage(chatId, text, { parse_mode: "Markdown", ...extra });
+}
+
+function notifyAdmin(text) {
+  if (ADMIN_ID) bot.sendMessage(ADMIN_ID, text, { parse_mode: "Markdown" });
+}
+
+function notifyDoctor(doctorId, text) {
+  const doctor = CLINIC.doctors.find(d => d.id === doctorId);
+  const targetId = doctor?.telegram_id || ADMIN_ID;
+  if (targetId) bot.sendMessage(targetId, text, { parse_mode: "Markdown" });
+}
+
+function getDoctorsList() {
+  return CLINIC.doctors.map((d, i) =>
+    `${i + 1}. *${d.name}* — ${d.spec} (${d.exp}, ${d.price})`
+  ).join("\n");
+}
+
+// ─── /start ──────────────────────────────────────────────────────────────────
 bot.onText(/\/start/, (msg) => {
-  const name = msg.from.first_name || "Hurmatli mijoz";
-  bot.sendMessage(msg.chat.id,
+  const name = msg.from.first_name || "Hurmatli mehmon";
+  userState[msg.chat.id] = null;
+  send(msg.chat.id,
     `Salom, *${name}*! 👋\n\n` +
     `🏥 *${CLINIC.name}*ga xush kelibsiz!\n\n` +
-    `• Xizmatlar va narxlar\n` +
-    `• Shifokorlar\n` +
-    `• Qabulga yozilish\n` +
-    `• 🤖 AI maslahat — istalgan savolga javob\n\n` +
-    `Quyidagi tugmalardan birini tanlang 👇`,
-    { parse_mode: "Markdown", ...mainMenu() }
+    `Quyidagi xizmatlardan foydalanishingiz mumkin:\n\n` +
+    `📋 Xizmatlar va narxlar\n` +
+    `👨‍⚕️ Shifokorlar ro'yxati\n` +
+    `🕐 Ish vaqti jadvali\n` +
+    `📅 Qabulga yozilish\n` +
+    `📍 Klinika manzili\n` +
+    `📞 Operator bilan bog'lanish\n` +
+    `🤖 *AI Maslahatchi* — kasallik bo'yicha professional maslahat\n\n` +
+    `Tugmani tanlang 👇`,
+    mainMenu()
   );
 });
 
+// ─── XIZMATLAR ───────────────────────────────────────────────────────────────
 bot.onText(/📋 Xizmatlar/, (msg) => {
-  bot.sendMessage(msg.chat.id, servicesText(), { parse_mode: "Markdown", ...mainMenu() });
+  let text = `📋 *${CLINIC.name} — Xizmatlar va narxlar*\n\n`;
+  CLINIC.services.forEach(s => { text += `• ${s.name} — 💰 ${s.price}\n`; });
+  text += `\n💡 Aniq narx uchun: ${CLINIC.phone}`;
+  send(msg.chat.id, text, mainMenu());
 });
+
+// ─── ISH VAQTI ───────────────────────────────────────────────────────────────
 bot.onText(/🕐 Ish vaqti/, (msg) => {
-  bot.sendMessage(msg.chat.id, hoursText(), { parse_mode: "Markdown", ...mainMenu() });
+  let text = `🕐 *Ish vaqti jadvali*\n\n`;
+  for (const [day, time] of Object.entries(CLINIC.workingHours)) {
+    text += `📅 *${day}:* ${time}\n`;
+  }
+  text += `\n📞 ${CLINIC.phone}`;
+  send(msg.chat.id, text, mainMenu());
 });
+
+// ─── SHIFOKORLAR ─────────────────────────────────────────────────────────────
 bot.onText(/👨‍⚕️ Shifokorlar/, (msg) => {
-  bot.sendMessage(msg.chat.id, doctorsText(), { parse_mode: "Markdown", ...mainMenu() });
-});
-bot.onText(/📍 Manzil/, (msg) => {
-  bot.sendMessage(msg.chat.id, `📍 *Manzil:*\n${CLINIC.address}`, { parse_mode: "Markdown" });
-  bot.sendLocation(msg.chat.id, 41.2995, 69.2401);
-  bot.sendMessage(msg.chat.id, "Yuqoridagi xaritada ko'ring 👆", mainMenu());
-});
-bot.onText(/📞 Bog'lanish/, (msg) => {
-  bot.sendMessage(msg.chat.id,
-    `📞 *Bog'lanish*\n\n🏥 ${CLINIC.name}\n📍 ${CLINIC.address}\n📞 ${CLINIC.phone}\n💬 WhatsApp: ${CLINIC.whatsapp}`,
-    { parse_mode: "Markdown", ...mainMenu() }
+  send(msg.chat.id,
+    `👨‍⚕️ *Bizning shifokorlar*\n\n${getDoctorsList()}`,
+    mainMenu()
   );
 });
 
-// ── AI maslahat ───────────────────────────────────────────────────────────────
-bot.onText(/🤖 AI maslahat/, (msg) => {
+// ─── MANZIL ──────────────────────────────────────────────────────────────────
+bot.onText(/📍 Manzil/, (msg) => {
+  send(msg.chat.id, `📍 *Manzil:*\n${CLINIC.address}`);
+  bot.sendLocation(msg.chat.id, CLINIC.mapLat, CLINIC.mapLng);
+  send(msg.chat.id, "Yuqoridagi xaritada ko'ring 👆", mainMenu());
+});
+
+// ─── OPERATOR ────────────────────────────────────────────────────────────────
+bot.onText(/📞 Operator/, (msg) => {
+  send(msg.chat.id,
+    `📞 *Operator bilan bog'lanish*\n\n` +
+    `🏥 ${CLINIC.name}\n` +
+    `📍 ${CLINIC.address}\n` +
+    `📞 Telefon: ${CLINIC.phone}\n` +
+    `💬 WhatsApp: ${CLINIC.whatsapp}\n\n` +
+    `Ish vaqtida qo'ng'iroq qiling yoki xabar yozing.`,
+    mainMenu()
+  );
+});
+
+// ─── AI MASLAHATCHI ───────────────────────────────────────────────────────────
+bot.onText(/🤖 AI Maslahatchi/, (msg) => {
   const chatId = msg.chat.id;
-  if (!CLAUDE_API_KEY) {
-    bot.sendMessage(chatId, `AI maslahat hozircha mavjud emas.\nQo'ng'iroq qiling: ${CLINIC.phone}`, mainMenu());
+  if (!CLAUDE_KEY) {
+    send(chatId, `AI Maslahatchi hozircha mavjud emas.\nQo'ng'iroq qiling: ${CLINIC.phone}`, mainMenu());
     return;
   }
-  appointmentFlow[chatId] = { step: "ai_question" };
-  bot.sendMessage(chatId,
-    `🤖 *AI maslahat*\n\nSavolingizni yozing — darhol javob beraman!\n\n_Masalan: "Boshim og'riyapti, qaysi shifokorga boraman?" yoki "UZI narxi qancha?"_`,
-    { parse_mode: "Markdown", reply_markup: { remove_keyboard: true } }
+  userState[chatId] = { step: "ai_start", history: [] };
+  send(chatId,
+    `🤖 *AI Maslahatchi*\n\n` +
+    `Salom! Men sizga tibbiy maslahat beraman.\n\n` +
+    `Qayerda noqulaylik his qilyapsiz? Belgilaringizni batafsil yozing.\n\n` +
+    `_Masalan: "Ko'zim qizargan va achishyapti" yoki "Boshim og'riyapti va ko'nglim ayniyapti"_`,
+    cancelMenu()
   );
 });
 
-// ── Qabulga yozilish ──────────────────────────────────────────────────────────
+// ─── QABULGA YOZILISH ─────────────────────────────────────────────────────────
 bot.onText(/📅 Qabulga yozilish/, (msg) => {
   const chatId = msg.chat.id;
-  const list = CLINIC.doctors.map((d, i) => `${i + 1}. ${d.name} — ${d.spec}`).join("\n");
-  bot.sendMessage(chatId,
-    `📅 *Qabulga yozilish*\n\nShifokorlar:\n${list}\n\nRaqam yozing (masalan: *1*)`,
-    { parse_mode: "Markdown", reply_markup: { remove_keyboard: true } }
+  userState[chatId] = { step: "appt_doctor" };
+  send(chatId,
+    `📅 *Qabulga yozilish*\n\n` +
+    `Shifokorlar ro'yxati:\n\n${getDoctorsList()}\n\n` +
+    `Qaysi shifokorga yozilmoqchisiz?\n*Raqam yozing (masalan: 1)*`,
+    cancelMenu()
   );
-  appointmentFlow[chatId] = { step: "doctor" };
 });
 
-// ── Universal handler ─────────────────────────────────────────────────────────
+// ─── UNIVERSAL HANDLER ───────────────────────────────────────────────────────
 const MENU_BTNS = [
   "📋 Xizmatlar va narxlar","🕐 Ish vaqti","👨‍⚕️ Shifokorlar",
-  "📅 Qabulga yozilish","📍 Manzil","📞 Bog'lanish","🤖 AI maslahat",
+  "📅 Qabulga yozilish","📍 Manzil","📞 Operator","🤖 AI Maslahatchi",
 ];
 
 bot.on("message", async (msg) => {
@@ -205,48 +251,155 @@ bot.on("message", async (msg) => {
   const text = msg.text;
   if (!text || text.startsWith("/") || MENU_BTNS.includes(text)) return;
 
-  const flow = appointmentFlow[chatId];
-  if (!flow) return;
+  // Bekor qilish
+  if (text === "❌ Bekor qilish") {
+    userState[chatId] = null;
+    send(chatId, "Bekor qilindi. Asosiy menyu:", mainMenu());
+    return;
+  }
 
-  // AI savol
-  if (flow.step === "ai_question") {
-    delete appointmentFlow[chatId];
-    const wait = await bot.sendMessage(chatId, "🤖 Javob tayyorlanmoqda...");
-    const answer = await askClaude(text);
+  const state = userState[chatId];
+  if (!state) return;
+
+  // ── AI MASLAHATCHI FLOW ─────────────────────────────────────────────────────
+  if (state.step === "ai_start") {
+    state.symptoms = text;
+    state.history = [{ role: "user", content: text }];
+    state.step = "ai_questioning";
+    state.questionCount = 0;
+
+    const systemPrompt = `Sen ${CLINIC.name} klinikasining professional AI tibbiy maslahatchiisisan.
+Shifokorlar: ${CLINIC.doctors.map(d => d.spec).join(", ")}.
+
+Vazifang:
+1. Bemorning belgilarini eshit
+2. Aniq tashxis qo'yish uchun 2-3 ta qisqa savol ber (bittadan)
+3. Keyin professional tashxis qo'y va qaysi shifokorga borishini ayt
+4. Bemor uchun tibbiy blanка tayyorla
+
+HOZIR: Bemorning dastlabki belgilarini ko'rib, birinchi aniqlovchi savolni ber.
+Savol qisqa bo'lsin, bir jumlada.`;
+
+    const wait = await send(chatId, "🤖 Tahlil qilinmoqda...");
+    const answer = await askClaude(state.history, systemPrompt);
     await bot.deleteMessage(chatId, wait.message_id).catch(() => {});
 
-    bot.sendMessage(chatId,
-      answer
-        ? `🤖 *AI maslahat:*\n\n${answer}\n\n_Qo'shimcha savol bo'lsa yana yozing._`
-        : `Kechirasiz, hozir javob bera olmayapman. Qo'ng'iroq qiling: ${CLINIC.phone}`,
-      { parse_mode: "Markdown", ...mainMenu() }
-    );
-
-    if (process.env.ADMIN_CHAT_ID) {
-      bot.sendMessage(process.env.ADMIN_CHAT_ID,
-        `🤖 *AI savol*\n👤 @${msg.from.username || msg.from.first_name}\n❓ ${text}\n💬 ${answer || "xato"}`,
-        { parse_mode: "Markdown" }
-      );
+    if (answer) {
+      state.history.push({ role: "assistant", content: answer });
+      send(chatId, `🤖 ${answer}`, cancelMenu());
+    } else {
+      userState[chatId] = null;
+      send(chatId, `Kechirasiz, xatolik. Qo'ng'iroq qiling: ${CLINIC.phone}`, mainMenu());
     }
     return;
   }
 
-  // Appointment: doctor
-  if (flow.step === "doctor") {
+  if (state.step === "ai_questioning") {
+    state.history.push({ role: "user", content: text });
+    state.questionCount++;
+
+    const systemPrompt = `Sen ${CLINIC.name} klinikasining professional AI tibbiy maslahatchiisisan.
+Shifokorlar: ${CLINIC.doctors.map(d => `${d.spec}: ${d.name}`).join(", ")}.
+
+Suhbat tarixi asosida:
+- Agar ${state.questionCount >= 2 ? "TASHXIS VA BLANКА vaqti keldi" : "yana 1 ta aniqlovchi savol ber"}.
+
+${state.questionCount >= 2 ? `TASHXIS QADAMI:
+1. Professional tashxis qo'y
+2. Qaysi shifokorga borishini ayt (klinikadan)  
+3. Shifokorga borish uchun tibbiy blanка yoz:
+
+FORMAT:
+---
+🏥 TIBBIY BLANКА
+Bemor: [ism so'ralmagan, "Bemor" deb yoz]
+Sana: ${new Date().toLocaleDateString('uz-UZ')}
+Belgilar: [qisqa]
+Dastlabki tashxis: [tashxis]
+Yo'naltirish: [shifokor nomi va mutaxassisligi]
+Tavsiyalar: [2-3 ta]
+---
+
+Keyin bemorni qabulga yozilishga taklif qil.` : "Bitta qisqa savol ber."}`;
+
+    const wait = await send(chatId, "🤖 Tahlil qilinmoqda...");
+    const answer = await askClaude(state.history, systemPrompt);
+    await bot.deleteMessage(chatId, wait.message_id).catch(() => {});
+
+    if (answer) {
+      state.history.push({ role: "assistant", content: answer });
+
+      if (state.questionCount >= 2) {
+        // Blanка tayyor — shifokorga yuborish
+        const doctorMatch = CLINIC.doctors.find(d =>
+          answer.toLowerCase().includes(d.spec.toLowerCase())
+        );
+
+        send(chatId, `🤖 *AI Maslahatchi xulosasi:*\n\n${answer}`, mainMenu());
+
+        // Shifokorga blanкa yuborish
+        const blankText =
+          `📋 *YANGI BEMOR — AI TASHXISI*\n\n` +
+          `👤 Telegram: @${msg.from.username || msg.from.first_name}\n` +
+          `📅 Sana: ${new Date().toLocaleDateString('uz-UZ')}\n\n` +
+          `*Belgilar:* ${state.symptoms}\n\n` +
+          `*AI xulosasi:*\n${answer}`;
+
+        if (doctorMatch) {
+          notifyDoctor(doctorMatch.id, blankText);
+          send(chatId,
+            `✅ Tibbiy blanкangiz *${doctorMatch.name}* (${doctorMatch.spec}) ga yuborildi!\n\n` +
+            `Qabulga yozilish uchun 👇`,
+            {
+              reply_markup: {
+                keyboard: [["📅 Qabulga yozilish"], ["🏠 Asosiy menyu"]],
+                resize_keyboard: true,
+              },
+            }
+          );
+        } else {
+          notifyAdmin(blankText);
+          send(chatId,
+            `✅ Tibbiy blanкangiz administratorga yuborildi!\n\nQabulga yozilish uchun 👇`,
+            {
+              reply_markup: {
+                keyboard: [["📅 Qabulga yozilish"], ["🏠 Asosiy menyu"]],
+                resize_keyboard: true,
+              },
+            }
+          );
+        }
+        userState[chatId] = null;
+      } else {
+        send(chatId, `🤖 ${answer}`, cancelMenu());
+      }
+    } else {
+      userState[chatId] = null;
+      send(chatId, `Kechirasiz, xatolik yuz berdi.\nQo'ng'iroq qiling: ${CLINIC.phone}`, mainMenu());
+    }
+    return;
+  }
+
+  // ── QABUL FLOW ──────────────────────────────────────────────────────────────
+  if (state.step === "appt_doctor") {
     const n = parseInt(text);
     if (isNaN(n) || n < 1 || n > CLINIC.doctors.length) {
-      bot.sendMessage(chatId, `⚠️ 1 dan ${CLINIC.doctors.length} gacha raqam kiriting.`);
+      send(chatId, `⚠️ Iltimos 1 dan ${CLINIC.doctors.length} gacha raqam kiriting.`);
       return;
     }
-    flow.doctor = CLINIC.doctors[n - 1];
-    flow.step = "name";
-    bot.sendMessage(chatId, `✅ *${flow.doctor.name}* tanlandi.\n\nIsmingizni kiriting:`, { parse_mode: "Markdown" });
+    state.doctor = CLINIC.doctors[n - 1];
+    state.step = "appt_name";
+    send(chatId,
+      `✅ *${state.doctor.name}* (${state.doctor.spec}) tanlandi.\n\nIsmingizni kiriting:`,
+      cancelMenu()
+    );
     return;
   }
 
-  if (flow.step === "name") {
-    flow.patientName = text; flow.step = "phone";
-    bot.sendMessage(chatId, `📞 Telefon raqamingizni kiriting:`, {
+  if (state.step === "appt_name") {
+    state.patientName = text;
+    state.step = "appt_phone";
+    send(chatId, `📞 Telefon raqamingizni kiriting:`, {
       reply_markup: {
         keyboard: [[{ text: "📱 Raqamni yuborish", request_contact: true }]],
         resize_keyboard: true, one_time_keyboard: true,
@@ -255,53 +408,102 @@ bot.on("message", async (msg) => {
     return;
   }
 
-  if (flow.step === "phone") {
-    flow.phone = text; flow.step = "date";
-    bot.sendMessage(chatId, `📅 Qaysi kun kelmoqchisiz? _(Masalan: Ertaga, 15-iyun)_`,
-      { parse_mode: "Markdown", reply_markup: { remove_keyboard: true } });
+  if (state.step === "appt_phone") {
+    state.phone = text;
+    state.step = "appt_date";
+    send(chatId, `📅 Qaysi kun kelmoqchisiz?\n_Masalan: Ertaga, 20-aprel_`, { parse_mode: "Markdown", reply_markup: { remove_keyboard: true } });
     return;
   }
 
-  if (flow.step === "date") {
-    flow.date = text; flow.step = "time";
-    bot.sendMessage(chatId, `⏰ Qaysi vaqt qulay? _(Masalan: 10:00)_`, { parse_mode: "Markdown" });
+  if (state.step === "appt_date") {
+    state.date = text;
+    state.step = "appt_time";
+    send(chatId, `⏰ Qaysi vaqt qulay?\n_Masalan: 10:00, Tushdan keyin_`, { parse_mode: "Markdown" });
     return;
   }
 
-  if (flow.step === "time") {
-    flow.time = text;
-    bot.sendMessage(chatId,
+  if (state.step === "appt_time") {
+    state.time = text;
+
+    const summary =
       `✅ *Qabul so'rovi yuborildi!*\n\n` +
-      `👤 ${flow.patientName}\n🩺 ${flow.doctor.name}\n📅 ${flow.date} — ${flow.time}\n📞 ${flow.phone}\n\n` +
-      `Operatorimiz tasdiqlash uchun bog'lanadi. 📞 ${CLINIC.phone}`,
-      { parse_mode: "Markdown", ...mainMenu() }
-    );
-    if (process.env.ADMIN_CHAT_ID) {
-      bot.sendMessage(process.env.ADMIN_CHAT_ID,
-        `🔔 *YANGI QABUL*\n👤 ${flow.patientName}\n📞 ${flow.phone}\n🩺 ${flow.doctor.name}\n📅 ${flow.date} — ${flow.time}`,
-        { parse_mode: "Markdown" }
-      );
-    }
-    delete appointmentFlow[chatId];
+      `👤 Bemor: ${state.patientName}\n` +
+      `🩺 Shifokor: ${state.doctor.name} (${state.doctor.spec})\n` +
+      `📅 Kun: ${state.date}\n` +
+      `⏰ Vaqt: ${state.time}\n` +
+      `📞 Telefon: ${state.phone}\n\n` +
+      `Operatorimiz tez orada tasdiqlash uchun bog'lanadi.\n` +
+      `📞 ${CLINIC.phone}`;
+
+    send(chatId, summary, mainMenu());
+
+    const adminText =
+      `🔔 *YANGI QABUL SO'ROVI*\n\n` +
+      `👤 ${state.patientName}\n` +
+      `📞 ${state.phone}\n` +
+      `🩺 ${state.doctor.name} (${state.doctor.spec})\n` +
+      `📅 ${state.date} — ⏰ ${state.time}\n` +
+      `🆔 @${msg.from.username || msg.from.first_name}`;
+
+    notifyDoctor(state.doctor.id, adminText);
+    userState[chatId] = null;
     return;
+  }
+
+  // Asosiy menyu
+  if (text === "🏠 Asosiy menyu") {
+    userState[chatId] = null;
+    send(chatId, "Asosiy menyu:", mainMenu());
   }
 });
 
+// ─── CONTACT ─────────────────────────────────────────────────────────────────
 bot.on("contact", (msg) => {
   const chatId = msg.chat.id;
-  const flow = appointmentFlow[chatId];
-  if (flow?.step === "phone") {
-    flow.phone = msg.contact.phone_number;
-    flow.step = "date";
-    bot.sendMessage(chatId, `📅 Qaysi kun kelmoqchisiz?`, { reply_markup: { remove_keyboard: true } });
+  const state = userState[chatId];
+  if (state?.step === "appt_phone") {
+    state.phone = msg.contact.phone_number;
+    state.step = "appt_date";
+    send(chatId, `📅 Qaysi kun kelmoqchisiz?\n_Masalan: Ertaga, 20-aprel_`, {
+      parse_mode: "Markdown",
+      reply_markup: { remove_keyboard: true },
+    });
   }
 });
 
-bot.on("polling_error", (err) => console.error("Polling error:", err.message));
-
-// ── Railway HTTP server ───────────────────────────────────────────────────────
+// ─── WEBHOOK yoki POLLING ─────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
-http.createServer((req, res) => res.end("Bot ishlayapdi ✅")).listen(PORT, () => {
-  console.log(`✅ ${CLINIC.name} boti ishga tushdi... (port: ${PORT})`);
-  console.log(CLAUDE_API_KEY ? "🤖 Claude AI ulangan" : "⚠️  CLAUDE_API_KEY yo'q — oddiy rejim");
-});
+
+if (WEBHOOK_URL) {
+  const webhookPath = `/webhook/${TOKEN}`;
+  bot.setWebHook(`${WEBHOOK_URL}${webhookPath}`).then(() => {
+    console.log("✅ Webhook o'rnatildi:", WEBHOOK_URL + webhookPath);
+  });
+
+  http.createServer((req, res) => {
+    if (req.method === "POST" && req.url === webhookPath) {
+      let body = "";
+      req.on("data", (c) => (body += c));
+      req.on("end", () => {
+        try {
+          const update = JSON.parse(body);
+          bot.processUpdate(update);
+        } catch(e) {
+          console.error("Webhook parse error:", e.message);
+        }
+        res.end("OK");
+      });
+    } else {
+      res.end("Bot ishlayapdi ✅");
+    }
+  }).listen(PORT, () => {
+    console.log(`✅ ${CLINIC.name} — Webhook rejimida (port: ${PORT})`);
+    console.log(CLAUDE_KEY ? "🤖 Claude AI ulangan" : "⚠️ CLAUDE_API_KEY yo'q");
+  });
+} else {
+  // Polling (local test uchun)
+  http.createServer((req, res) => res.end("Bot ishlayapdi ✅")).listen(PORT);
+  console.log(`✅ ${CLINIC.name} — Polling rejimida (port: ${PORT})`);
+  console.log(CLAUDE_KEY ? "🤖 Claude AI ulangan" : "⚠️ CLAUDE_API_KEY yo'q");
+  bot.on("polling_error", (err) => console.error("Polling error:", err.message));
+}

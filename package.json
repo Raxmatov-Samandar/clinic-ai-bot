@@ -1,7 +1,7 @@
 {
-  "name": "clinic-telegram-bot",
-  "version": "1.0.0",
-  "description": "AI Telegram bot for Uzbek clinics",
+  "name": "clinic-telegram-bot-v2",
+  "version": "2.0.0",
+  "description": "Professional AI clinic bot with diagnosis",
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js"
