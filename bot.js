@@ -3,10 +3,10 @@ const https = require("https");
 const http = require("http");
 
 // ─── ENV ─────────────────────────────────────────────────────────────────────
-const TOKEN          = process.env.BOT_TOKEN;
-const CLAUDE_KEY     = process.env.CLAUDE_API_KEY;
-const ADMIN_ID       = process.env.ADMIN_CHAT_ID;
-const WEBHOOK_URL    = process.env.WEBHOOK_URL; // https://your-app.onrender.com
+const TOKEN       = process.env.BOT_TOKEN;
+const CLAUDE_KEY  = process.env.CLAUDE_API_KEY;
+const ADMIN_ID    = process.env.ADMIN_CHAT_ID;
+const WEBHOOK_URL = process.env.WEBHOOK_URL;
 
 // ─── CLINIC CONFIG ────────────────────────────────────────────────────────────
 const CLINIC = {
@@ -16,50 +16,188 @@ const CLINIC = {
   whatsapp: "+998 90 123 45 67",
   mapLat:   41.2995,
   mapLng:   69.2401,
+  established: "2010",
   workingHours: {
     "Dushanba – Juma": "08:00 – 20:00",
     "Shanba":          "09:00 – 17:00",
     "Yakshanba":       "Dam olish kuni",
   },
-  // Har bir shifokor uchun telegram_id ni klinikadan oling
-  // Agar yo'q bo'lsa — null qoldiring, admin ga ketadi
   doctors: [
-    { id: 1,  name: "Dr. Aziz Karimov",     spec: "Terapevt",     exp: "15 yil", price: "80,000 so'm",  telegram_id: null },
-    { id: 2,  name: "Dr. Malika Yusupova",  spec: "Kardiolog",     exp: "12 yil", price: "120,000 so'm", telegram_id: null },
-    { id: 3,  name: "Dr. Bobur Toshmatov",  spec: "Nevropatolog",  exp: "10 yil", price: "120,000 so'm", telegram_id: null },
-    { id: 4,  name: "Dr. Nodira Aliyeva",   spec: "Ginekolog",     exp: "18 yil", price: "100,000 so'm", telegram_id: null },
-    { id: 5,  name: "Dr. Sardor Xoliqov",   spec: "Urolog",        exp: "8 yil",  price: "100,000 so'm", telegram_id: null },
-    { id: 6,  name: "Dr. Zulfiya Raximova", spec: "Pediatr",       exp: "14 yil", price: "90,000 so'm",  telegram_id: null },
-    { id: 7,  name: "Dr. Kamol Mirzayev",   spec: "Oftalmolog",    exp: "11 yil", price: "110,000 so'm", telegram_id: null },
-    { id: 8,  name: "Dr. Dilnoza Xasanova", spec: "Dermatolog",    exp: "9 yil",  price: "100,000 so'm", telegram_id: null },
-    { id: 9,  name: "Dr. Jasur Tursunov",   spec: "Ortoped",       exp: "13 yil", price: "120,000 so'm", telegram_id: null },
-    { id: 10, name: "Dr. Maftuna Ergasheva",spec: "Endokrinolog",  exp: "10 yil", price: "110,000 so'm", telegram_id: null },
+    {
+      id: 1, name: "Dr. Aziz Karimov", spec: "Terapevt", exp: "15 yil",
+      price: "80,000 so'm", telegram_id: null,
+      bio: "Toshkent Tibbiyot Akademiyasini 2008-yilda tamomlagan. Germaniyada malaka oshirgan. Yurak-qon tomir va nafas yo'li kasalliklarida ixtisoslashgan.",
+      schedule: "Du-Ju: 09:00-17:00, Sha: 09:00-13:00",
+      treats: ["gripp", "shamollash", "bronxit", "pnevmoniya", "gipertenziya", "umumiy tekshiruv"],
+    },
+    {
+      id: 2, name: "Dr. Malika Yusupova", spec: "Kardiolog", exp: "12 yil",
+      price: "120,000 so'm", telegram_id: null,
+      bio: "Yurak kasalliklari bo'yicha oliy malakali mutaxassis. EKG va EXO-KG tekshiruvlarini o'tkazadi. 500+ muvaffaqiyatli bemor.",
+      schedule: "Du-Ju: 10:00-18:00",
+      treats: ["yurak og'rig'i", "aritmiya", "gipertenziya", "stenokardiya", "yurak yetishmovchiligi", "EKG"],
+    },
+    {
+      id: 3, name: "Dr. Bobur Toshmatov", spec: "Nevropatolog", exp: "10 yil",
+      price: "120,000 so'm", telegram_id: null,
+      bio: "Asab tizimi kasalliklari mutaxassisi. Bosh og'rig'i, miqren, osteoxondroz davolashda katta tajribaga ega.",
+      schedule: "Du-Sha: 09:00-17:00",
+      treats: ["bosh og'rig'i", "miqren", "osteoxondroz", "uyqusizlik", "depressiya", "insult", "epilepsiya"],
+    },
+    {
+      id: 4, name: "Dr. Nodira Aliyeva", spec: "Ginekolog", exp: "18 yil",
+      price: "100,000 so'm", telegram_id: null,
+      bio: "Ayollar salomatligi bo'yicha eng tajribali mutaxassislardan biri. Homiladorlik, tug'ruq va ginekologik kasalliklarni davolaydi.",
+      schedule: "Du-Ju: 08:00-16:00, Sha: 08:00-12:00",
+      treats: ["homiladorlik", "ginekologik kasalliklar", "oylik bузилиши", "kista", "mioma", "STI"],
+    },
+    {
+      id: 5, name: "Dr. Sardor Xoliqov", spec: "Urolog", exp: "8 yil",
+      price: "100,000 so'm", telegram_id: null,
+      bio: "Siydik-tanosil tizimi kasalliklari mutaxassisi. Zamonaviy endoskopik usullar bilan davolaydi.",
+      schedule: "Du-Sha: 10:00-18:00",
+      treats: ["siydik yo'li kasalliklari", "prostatit", "buyrak toshi", "sistit", "potentsiya"],
+    },
+    {
+      id: 6, name: "Dr. Zulfiya Raximova", spec: "Pediatr", exp: "14 yil",
+      price: "90,000 so'm", telegram_id: null,
+      bio: "Bolalar shifokori, 0-16 yosh. Bolalar kasalliklari va rivojlanishi bo'yicha mutaxassis.",
+      schedule: "Du-Sha: 08:00-17:00",
+      treats: ["bolalar kasalliklari", "isitma", "yo'tal", "allergiya", "emlash", "rivojlanish"],
+    },
+    {
+      id: 7, name: "Dr. Kamol Mirzayev", spec: "Oftalmolog", exp: "11 yil",
+      price: "110,000 so'm", telegram_id: null,
+      bio: "Ko'z kasalliklari mutaxassisi. Ko'z bosimi, katarakt, ko'rish buzilishlari davolashda ixtisoslashgan.",
+      schedule: "Du-Ju: 09:00-17:00",
+      treats: ["ko'z qizarishi", "ko'z og'rig'i", "ko'rish yomonlashishi", "ko'z bosimi", "katarakt", "conjunktivit"],
+    },
+    {
+      id: 8, name: "Dr. Dilnoza Xasanova", spec: "Dermatolog", exp: "9 yil",
+      price: "100,000 so'm", telegram_id: null,
+      bio: "Teri kasalliklari va kosmetologiya mutaxassisi. Ekzema, psoriaz, akne davolashda tajribali.",
+      schedule: "Du-Sha: 10:00-18:00",
+      treats: ["ekzema", "psoriaz", "akne", "teri qichishi", "toshmalar", "grибок", "allergik dermatit"],
+    },
+    {
+      id: 9, name: "Dr. Jasur Tursunov", spec: "Ortoped", exp: "13 yil",
+      price: "120,000 so'm", telegram_id: null,
+      bio: "Suyak va bo'g'im kasalliklari mutaxassisi. Artrit, artroz, umurtqa kasalliklarini davolaydi.",
+      schedule: "Du-Ju: 09:00-17:00",
+      treats: ["bo'g'im og'rig'i", "bel og'rig'i", "artrit", "artroz", "suyak sinishi", "umurtqa"],
+    },
+    {
+      id: 10, name: "Dr. Maftuna Ergasheva", spec: "Endokrinolog", exp: "10 yil",
+      price: "110,000 so'm", telegram_id: null,
+      bio: "Gormon va modda almashinuvi kasalliklari mutaxassisi. Diabet, qalqonsimon bez kasalliklari.",
+      schedule: "Du-Sha: 09:00-17:00",
+      treats: ["diabet", "qalqonsimon bez", "semirish", "hormon buzilishi", "osteoporoz"],
+    },
   ],
   services: [
-    { name: "Terapevt maslahati",     price: "80,000 so'm"   },
-    { name: "Kardiolog maslahati",    price: "120,000 so'm"  },
-    { name: "UZI tekshiruvi",         price: "60,000 so'mdan"},
-    { name: "Qon tahlili (umumiy)",   price: "35,000 so'm"   },
-    { name: "Qon tahlili (to'liq)",   price: "150,000 so'm"  },
-    { name: "EKG",                    price: "50,000 so'm"   },
-    { name: "MRT",                    price: "350,000 so'm"  },
-    { name: "Rentgen",                price: "45,000 so'm"   },
-    { name: "Ginekolog maslahati",    price: "100,000 so'm"  },
-    { name: "Pediatr maslahati",      price: "90,000 so'm"   },
-    { name: "Oftalmolog maslahati",   price: "110,000 so'm"  },
-    { name: "Dermatolog maslahati",   price: "100,000 so'm"  },
+    { name: "Terapevt maslahati",        price: "80,000 so'm"    },
+    { name: "Kardiolog maslahati",        price: "120,000 so'm"   },
+    { name: "Ginekolog maslahati",        price: "100,000 so'm"   },
+    { name: "Pediatr maslahati",          price: "90,000 so'm"    },
+    { name: "Oftalmolog maslahati",       price: "110,000 so'm"   },
+    { name: "Dermatolog maslahati",       price: "100,000 so'm"   },
+    { name: "Nevropatolog maslahati",     price: "120,000 so'm"   },
+    { name: "Urolog maslahati",           price: "100,000 so'm"   },
+    { name: "Ortoped maslahati",          price: "120,000 so'm"   },
+    { name: "Endokrinolog maslahati",     price: "110,000 so'm"   },
+    { name: "UZI (qorin bo'shlig'i)",     price: "80,000 so'm"    },
+    { name: "UZI (ginekologik)",          price: "90,000 so'm"    },
+    { name: "UZI (yurak — EXO-KG)",       price: "120,000 so'm"   },
+    { name: "Qon tahlili (umumiy)",       price: "35,000 so'm"    },
+    { name: "Qon tahlili (to'liq panel)", price: "150,000 so'm"   },
+    { name: "Siydik tahlili",             price: "25,000 so'm"    },
+    { name: "Qand (glyukoza) tahlili",    price: "20,000 so'm"    },
+    { name: "EKG",                        price: "50,000 so'm"    },
+    { name: "MRT",                        price: "350,000 so'm"   },
+    { name: "KT (kompyuter tomografiya)", price: "400,000 so'm"   },
+    { name: "Rentgen",                    price: "45,000 so'm"    },
+    { name: "Massaj (1 seans)",           price: "60,000 so'm"    },
+    { name: "Tish tekshiruvi",            price: "50,000 so'm"    },
   ],
 };
+
+// ─── KLINIKA BILIMLAR BAZASI (RAG) ───────────────────────────────────────────
+const KNOWLEDGE_BASE = `
+=== SALOMATLIK KLINIKASI — TO'LIQ MA'LUMOT BAZASI ===
+
+KLINIKA HAQIDA:
+- 2010-yildan buyon ishlamoqda, 14 yillik tajriba
+- 10 ta mutaxassis shifokor, 30+ tibbiy xizmat
+- Zamonaviy MRT, KT, UZI, laboratoriya jihozlari
+- Dorixona klinika ichida mavjud
+- Bepul maslahat: birinchi tashrif uchun 10% chegirma
+- Sug'urta: Uzbekinvest, Gross, Alpha Insurance qabul qilinadi
+
+SHIFOKORLAR HAQIDA BATAFSIL:
+- Dr. Aziz Karimov (Terapevt): Germaniyada malaka oshirgan, yurak-qon tomir va nafas kasalliklarida ixtisoslashgan. JADVAL: Du-Ju 09:00-17:00, Sha 09:00-13:00
+- Dr. Malika Yusupova (Kardiolog): EKG va EXO-KG mutaxassisi, 500+ bemor. JADVAL: Du-Ju 10:00-18:00
+- Dr. Bobur Toshmatov (Nevropatolog): Bosh og'rig'i va miqren bo'yicha ekspert. JADVAL: Du-Sha 09:00-17:00
+- Dr. Nodira Aliyeva (Ginekolog): 18 yil tajriba, homiladorlik kuzatuvi. JADVAL: Du-Ju 08:00-16:00
+- Dr. Sardor Xoliqov (Urolog): Endoskopik usullar. JADVAL: Du-Sha 10:00-18:00
+- Dr. Zulfiya Raximova (Pediatr): 0-16 yosh bolalar. JADVAL: Du-Sha 08:00-17:00
+- Dr. Kamol Mirzayev (Oftalmolog): Ko'z bosimi, katarakt. JADVAL: Du-Ju 09:00-17:00
+- Dr. Dilnoza Xasanova (Dermatolog): Ekzema, psoriaz, akne. JADVAL: Du-Sha 10:00-18:00
+- Dr. Jasur Tursunov (Ortoped): Suyak, bo'g'im, umurtqa. JADVAL: Du-Ju 09:00-17:00
+- Dr. Maftuna Ergasheva (Endokrinolog): Diabet, qalqonsimon bez. JADVAL: Du-Sha 09:00-17:00
+
+PROTOKOLLAR VA QOIDALAR:
+- Qabulga yozilish: 1-2 kun oldin yozilish tavsiya etiladi
+- Kechikish: 15 daqiqadan ko'p kechiksa, navbat keyinga suriladi
+- Tahlil natijalari: umumiy qon 2 soat, to'liq panel 1 kun
+- MRT/KT natijasi: 2-4 soat
+- Bolalar: ota-onasi bilan kelishi shart (16 yoshgacha)
+- Homilador ayollar: alohida navbat, ustunlik beriladi
+
+NARXLAR VA CHEGIRMALAR:
+- Pensionerlar (65+): barcha xizmatlarga 15% chegirma
+- Talabalar: 10% chegirma (talaba guvohnomasi bilan)
+- Birinchi tashrif: 10% chegirma
+- Kompleks tekshiruv (5+ xizmat): 20% chegirma
+- Sug'urta orqali: to'lov sug'urta kompaniyasiga qarab
+
+TEZ-TEZ BERILADIGAN SAVOLLAR:
+S: Qon tahlili uchun ro'za tutish kerakmi?
+J: Ha, umumiy qon tahlili uchun emas, lekin glyukoza va lipid uchun 8-12 soat ro'za tutish kerak.
+
+S: MRT uchun tayyorgarlik kerakmi?
+J: Metall implant, kardiostimulyator bo'lsa oldindan aytish shart. Qorin MRT uchun 4 soat ovqat yeymaslik kerak.
+
+S: Bolani yolg'iz yuborishim mumkinmi?
+J: 16 yoshgacha ota-ona yoki vasiy bilan kelish shart.
+
+S: Natijalarni online olsa bo'ladimi?
+J: Ha, Telegram orqali yuboriladi. Qabulda so'rang.
+
+S: Kechqurun ham ishlaysizmi?
+J: Ha, Du-Ju kuni 20:00 gacha, Shanba 17:00 gacha.
+
+KASALLIKLAR VA SHIFOKORLAR ALOQASI:
+- Bosh og'rig'i, miqren → Nevropatolog (Dr. Toshmatov)
+- Yurak og'rig'i, bosim → Kardiolog (Dr. Yusupova)
+- Ko'z muammolari → Oftalmolog (Dr. Mirzayev)
+- Teri muammolari → Dermatolog (Dr. Xasanova)
+- Bel, bo'g'im og'rig'i → Ortoped (Dr. Tursunov)
+- Qand kasalligi, vazn → Endokrinolog (Dr. Ergasheva)
+- Bolalar kasalliklari → Pediatr (Dr. Raximova)
+- Ayollar muammolari → Ginekolog (Dr. Aliyeva)
+- Siydik muammolari → Urolog (Dr. Xoliqov)
+- Shamollash, gripp → Terapevt (Dr. Karimov)
+- Umumiy tekshiruv → Terapevt (Dr. Karimov)
+`;
 
 // ─── BOT SETUP ───────────────────────────────────────────────────────────────
 const bot = WEBHOOK_URL
   ? new TelegramBot(TOKEN)
   : new TelegramBot(TOKEN, { polling: true });
 
-// ─── STATE ───────────────────────────────────────────────────────────────────
-const userState = {}; // chatId → { step, data }
+const userState = {};
 
-// ─── AI CLAUDE ───────────────────────────────────────────────────────────────
+// ─── AI ──────────────────────────────────────────────────────────────────────
 async function askClaude(messages, systemPrompt) {
   if (!CLAUDE_KEY) return null;
   return new Promise((resolve) => {
@@ -119,7 +257,7 @@ function cancelMenu() {
     reply_markup: {
       keyboard: [["❌ Bekor qilish"]],
       resize_keyboard: true,
-      one_time_keyboard: true,
+      one_time_keyboard: false,
     },
   };
 }
@@ -128,38 +266,36 @@ function cancelMenu() {
 function send(chatId, text, extra = {}) {
   return bot.sendMessage(chatId, text, { parse_mode: "Markdown", ...extra });
 }
-
 function notifyAdmin(text) {
   if (ADMIN_ID) bot.sendMessage(ADMIN_ID, text, { parse_mode: "Markdown" });
 }
-
 function notifyDoctor(doctorId, text) {
-  const doctor = CLINIC.doctors.find(d => d.id === doctorId);
-  const targetId = doctor?.telegram_id || ADMIN_ID;
-  if (targetId) bot.sendMessage(targetId, text, { parse_mode: "Markdown" });
+  const doc = CLINIC.doctors.find(d => d.id === doctorId);
+  const target = doc?.telegram_id || ADMIN_ID;
+  if (target) bot.sendMessage(target, text, { parse_mode: "Markdown" });
 }
-
 function getDoctorsList() {
   return CLINIC.doctors.map((d, i) =>
-    `${i + 1}. *${d.name}* — ${d.spec} (${d.exp}, ${d.price})`
+    `${i+1}. *${d.name}* — ${d.spec} (${d.exp}, ${d.price})`
   ).join("\n");
 }
 
 // ─── /start ──────────────────────────────────────────────────────────────────
 bot.onText(/\/start/, (msg) => {
-  const name = msg.from.first_name || "Hurmatli mehmon";
   userState[msg.chat.id] = null;
+  const name = msg.from.first_name || "Hurmatli mehmon";
   send(msg.chat.id,
     `Salom, *${name}*! 👋\n\n` +
-    `🏥 *${CLINIC.name}*ga xush kelibsiz!\n\n` +
-    `Quyidagi xizmatlardan foydalanishingiz mumkin:\n\n` +
+    `🏥 *${CLINIC.name}*ga xush kelibsiz!\n` +
+    `_(${CLINIC.established}-yildan beri xizmatda)_\n\n` +
+    `Quyidagilardan foydalanishingiz mumkin:\n\n` +
     `📋 Xizmatlar va narxlar\n` +
     `👨‍⚕️ Shifokorlar ro'yxati\n` +
     `🕐 Ish vaqti jadvali\n` +
     `📅 Qabulga yozilish\n` +
     `📍 Klinika manzili\n` +
     `📞 Operator bilan bog'lanish\n` +
-    `🤖 *AI Maslahatchi* — kasallik bo'yicha professional maslahat\n\n` +
+    `🤖 *AI Maslahatchi* — belgilaringizni aytib, professional tashxis oling\n\n` +
     `Tugmani tanlang 👇`,
     mainMenu()
   );
@@ -169,7 +305,11 @@ bot.onText(/\/start/, (msg) => {
 bot.onText(/📋 Xizmatlar/, (msg) => {
   let text = `📋 *${CLINIC.name} — Xizmatlar va narxlar*\n\n`;
   CLINIC.services.forEach(s => { text += `• ${s.name} — 💰 ${s.price}\n`; });
-  text += `\n💡 Aniq narx uchun: ${CLINIC.phone}`;
+  text += `\n🎁 *Chegirmalar:*\n`;
+  text += `• Pensionerlar (65+): 15% chegirma\n`;
+  text += `• Talabalar: 10% chegirma\n`;
+  text += `• Birinchi tashrif: 10% chegirma\n`;
+  text += `\n📞 Aniq narx: ${CLINIC.phone}`;
   send(msg.chat.id, text, mainMenu());
 });
 
@@ -179,21 +319,29 @@ bot.onText(/🕐 Ish vaqti/, (msg) => {
   for (const [day, time] of Object.entries(CLINIC.workingHours)) {
     text += `📅 *${day}:* ${time}\n`;
   }
+  text += `\n👨‍⚕️ *Shifokorlar jadvali:*\n`;
+  CLINIC.doctors.forEach(d => {
+    text += `• ${d.spec}: ${d.schedule}\n`;
+  });
   text += `\n📞 ${CLINIC.phone}`;
   send(msg.chat.id, text, mainMenu());
 });
 
 // ─── SHIFOKORLAR ─────────────────────────────────────────────────────────────
 bot.onText(/👨‍⚕️ Shifokorlar/, (msg) => {
-  send(msg.chat.id,
-    `👨‍⚕️ *Bizning shifokorlar*\n\n${getDoctorsList()}`,
-    mainMenu()
-  );
+  let text = `👨‍⚕️ *Bizning shifokorlar*\n\n`;
+  CLINIC.doctors.forEach(d => {
+    text += `🩺 *${d.name}*\n`;
+    text += `   ${d.spec} | ${d.exp} tajriba | ${d.price}\n`;
+    text += `   📅 ${d.schedule}\n`;
+    text += `   _${d.bio}_\n\n`;
+  });
+  send(msg.chat.id, text, mainMenu());
 });
 
 // ─── MANZIL ──────────────────────────────────────────────────────────────────
 bot.onText(/📍 Manzil/, (msg) => {
-  send(msg.chat.id, `📍 *Manzil:*\n${CLINIC.address}`);
+  send(msg.chat.id, `📍 *Manzil:*\n${CLINIC.address}\n\n🚌 Mo'ljal: Yunusobod 5-mavze`);
   bot.sendLocation(msg.chat.id, CLINIC.mapLat, CLINIC.mapLng);
   send(msg.chat.id, "Yuqoridagi xaritada ko'ring 👆", mainMenu());
 });
@@ -206,7 +354,9 @@ bot.onText(/📞 Operator/, (msg) => {
     `📍 ${CLINIC.address}\n` +
     `📞 Telefon: ${CLINIC.phone}\n` +
     `💬 WhatsApp: ${CLINIC.whatsapp}\n\n` +
-    `Ish vaqtida qo'ng'iroq qiling yoki xabar yozing.`,
+    `⏰ Qo'ng'iroq qabul vaqti:\n` +
+    `Du-Ju: 08:00-20:00\n` +
+    `Shanba: 09:00-17:00`,
     mainMenu()
   );
 });
@@ -218,12 +368,15 @@ bot.onText(/🤖 AI Maslahatchi/, (msg) => {
     send(chatId, `AI Maslahatchi hozircha mavjud emas.\nQo'ng'iroq qiling: ${CLINIC.phone}`, mainMenu());
     return;
   }
-  userState[chatId] = { step: "ai_start", history: [] };
+  userState[chatId] = { step: "ai_start", history: [], questionCount: 0 };
   send(chatId,
     `🤖 *AI Maslahatchi*\n\n` +
     `Salom! Men sizga tibbiy maslahat beraman.\n\n` +
-    `Qayerda noqulaylik his qilyapsiz? Belgilaringizni batafsil yozing.\n\n` +
-    `_Masalan: "Ko'zim qizargan va achishyapti" yoki "Boshim og'riyapti va ko'nglim ayniyapti"_`,
+    `*Qanday muammo bor?* Belgilaringizni batafsil yozing.\n\n` +
+    `_Masalan:_\n` +
+    `_• "Ko'zim qizargan va achishyapti, 2 kundan beri"_\n` +
+    `_• "Boshim og'riyapti va ko'nglim ayniyapti"_\n` +
+    `_• "Bel og'rig'im bor, egilolmayapman"_`,
     cancelMenu()
   );
 });
@@ -234,8 +387,8 @@ bot.onText(/📅 Qabulga yozilish/, (msg) => {
   userState[chatId] = { step: "appt_doctor" };
   send(chatId,
     `📅 *Qabulga yozilish*\n\n` +
-    `Shifokorlar ro'yxati:\n\n${getDoctorsList()}\n\n` +
-    `Qaysi shifokorga yozilmoqchisiz?\n*Raqam yozing (masalan: 1)*`,
+    `Shifokorlar:\n\n${getDoctorsList()}\n\n` +
+    `Raqam yozing _(masalan: 1)_`,
     cancelMenu()
   );
 });
@@ -251,131 +404,107 @@ bot.on("message", async (msg) => {
   const text = msg.text;
   if (!text || text.startsWith("/") || MENU_BTNS.includes(text)) return;
 
-  // Bekor qilish
   if (text === "❌ Bekor qilish") {
     userState[chatId] = null;
-    send(chatId, "Bekor qilindi. Asosiy menyu:", mainMenu());
+    send(chatId, "Bekor qilindi.", mainMenu());
+    return;
+  }
+  if (text === "🏠 Asosiy menyu") {
+    userState[chatId] = null;
+    send(chatId, "Asosiy menyu:", mainMenu());
     return;
   }
 
   const state = userState[chatId];
   if (!state) return;
 
-  // ── AI MASLAHATCHI FLOW ─────────────────────────────────────────────────────
-  if (state.step === "ai_start") {
-    state.symptoms = text;
-    state.history = [{ role: "user", content: text }];
-    state.step = "ai_questioning";
-    state.questionCount = 0;
-
-    const systemPrompt = `Sen ${CLINIC.name} klinikasining professional AI tibbiy maslahatchiisisan.
-Shifokorlar: ${CLINIC.doctors.map(d => d.spec).join(", ")}.
-
-Vazifang:
-1. Bemorning belgilarini eshit
-2. Aniq tashxis qo'yish uchun 2-3 ta qisqa savol ber (bittadan)
-3. Keyin professional tashxis qo'y va qaysi shifokorga borishini ayt
-4. Bemor uchun tibbiy blanка tayyorla
-
-HOZIR: Bemorning dastlabki belgilarini ko'rib, birinchi aniqlovchi savolni ber.
-Savol qisqa bo'lsin, bir jumlada.`;
-
-    const wait = await send(chatId, "🤖 Tahlil qilinmoqda...");
-    const answer = await askClaude(state.history, systemPrompt);
-    await bot.deleteMessage(chatId, wait.message_id).catch(() => {});
-
-    if (answer) {
-      state.history.push({ role: "assistant", content: answer });
-      send(chatId, `🤖 ${answer}`, cancelMenu());
-    } else {
-      userState[chatId] = null;
-      send(chatId, `Kechirasiz, xatolik. Qo'ng'iroq qiling: ${CLINIC.phone}`, mainMenu());
-    }
-    return;
-  }
-
-  if (state.step === "ai_questioning") {
+  // ── AI MASLAHATCHI ──────────────────────────────────────────────────────────
+  if (state.step === "ai_start" || state.step === "ai_questioning") {
     state.history.push({ role: "user", content: text });
+    if (state.step === "ai_start") {
+      state.symptoms = text;
+      state.step = "ai_questioning";
+    }
     state.questionCount++;
 
-    const systemPrompt = `Sen ${CLINIC.name} klinikasining professional AI tibbiy maslahatchiisisan.
-Shifokorlar: ${CLINIC.doctors.map(d => `${d.spec}: ${d.name}`).join(", ")}.
+    const isLastQuestion = state.questionCount >= 3;
 
-Suhbat tarixi asosida:
-- Agar ${state.questionCount >= 2 ? "TASHXIS VA BLANКА vaqti keldi" : "yana 1 ta aniqlovchi savol ber"}.
+    const systemPrompt = `Sen "${CLINIC.name}" klinikasining professional AI tibbiy maslahatchiisisan.
 
-${state.questionCount >= 2 ? `TASHXIS QADAMI:
-1. Professional tashxis qo'y
-2. Qaysi shifokorga borishini ayt (klinikadan)  
-3. Shifokorga borish uchun tibbiy blanка yoz:
+KLINIKA MA'LUMOTLARI:
+${KNOWLEDGE_BASE}
 
-FORMAT:
----
-🏥 TIBBIY BLANКА
-Bemor: [ism so'ralmagan, "Bemor" deb yoz]
-Sana: ${new Date().toLocaleDateString('uz-UZ')}
-Belgilar: [qisqa]
-Dastlabki tashxis: [tashxis]
-Yo'naltirish: [shifokor nomi va mutaxassisligi]
-Tavsiyalar: [2-3 ta]
----
+VAZIFANG:
+${!isLastQuestion
+  ? `Bemorning belgilarini tahlil qil va BITTA qisqa aniqlovchi savol ber.
+Savol qisqa, aniq bo'lsin. Faqat bitta savol.`
+  : `Endi YAKUNIY TASHXIS va BLANКА tayyorla:
 
-Keyin bemorni qabulga yozilishga taklif qil.` : "Bitta qisqa savol ber."}`;
+1. Professional tibbiy tashxis (taxminiy) qo'y
+2. Qaysi shifokorga borishini aniq ko'rsat (klinikamizdan)
+3. Shifokorning ish jadvalini ayt
+4. Quyidagi formatda tibbiy blanка yoz:
+
+━━━━━━━━━━━━━━━━━━━━━━
+🏥 TIBBIY YO'LLANMA
+📅 Sana: ${new Date().toLocaleDateString('uz-UZ')}
+━━━━━━━━━━━━━━━━━━━━━━
+Bemor belgilari: [qisqacha]
+Taxminiy tashxis: [tashxis]
+Yo'naltirish: [shifokor ismi va mutaxassisligi]
+Jadval: [shifokorning ish vaqti]
+Tavsiyalar: [2-3 ta amaliy maslahat]
+━━━━━━━━━━━━━━━━━━━━━━
+
+5. Qabulga yozilishni taklif qil
+6. ESLATMA: Bu taxminiy tashxis, shifokor ko'rigidan keyin aniqlanadi`
+}
+
+MUHIM: Faqat O'ZBEK tilida javob ber. Qisqa va aniq.`;
 
     const wait = await send(chatId, "🤖 Tahlil qilinmoqda...");
     const answer = await askClaude(state.history, systemPrompt);
     await bot.deleteMessage(chatId, wait.message_id).catch(() => {});
 
-    if (answer) {
-      state.history.push({ role: "assistant", content: answer });
-
-      if (state.questionCount >= 2) {
-        // Blanка tayyor — shifokorga yuborish
-        const doctorMatch = CLINIC.doctors.find(d =>
-          answer.toLowerCase().includes(d.spec.toLowerCase())
-        );
-
-        send(chatId, `🤖 *AI Maslahatchi xulosasi:*\n\n${answer}`, mainMenu());
-
-        // Shifokorga blanкa yuborish
-        const blankText =
-          `📋 *YANGI BEMOR — AI TASHXISI*\n\n` +
-          `👤 Telegram: @${msg.from.username || msg.from.first_name}\n` +
-          `📅 Sana: ${new Date().toLocaleDateString('uz-UZ')}\n\n` +
-          `*Belgilar:* ${state.symptoms}\n\n` +
-          `*AI xulosasi:*\n${answer}`;
-
-        if (doctorMatch) {
-          notifyDoctor(doctorMatch.id, blankText);
-          send(chatId,
-            `✅ Tibbiy blanкangiz *${doctorMatch.name}* (${doctorMatch.spec}) ga yuborildi!\n\n` +
-            `Qabulga yozilish uchun 👇`,
-            {
-              reply_markup: {
-                keyboard: [["📅 Qabulga yozilish"], ["🏠 Asosiy menyu"]],
-                resize_keyboard: true,
-              },
-            }
-          );
-        } else {
-          notifyAdmin(blankText);
-          send(chatId,
-            `✅ Tibbiy blanкangiz administratorga yuborildi!\n\nQabulga yozilish uchun 👇`,
-            {
-              reply_markup: {
-                keyboard: [["📅 Qabulga yozilish"], ["🏠 Asosiy menyu"]],
-                resize_keyboard: true,
-              },
-            }
-          );
-        }
-        userState[chatId] = null;
-      } else {
-        send(chatId, `🤖 ${answer}`, cancelMenu());
-      }
-    } else {
+    if (!answer) {
       userState[chatId] = null;
-      send(chatId, `Kechirasiz, xatolik yuz berdi.\nQo'ng'iroq qiling: ${CLINIC.phone}`, mainMenu());
+      send(chatId, `Kechirasiz, xatolik. Qo'ng'iroq qiling: ${CLINIC.phone}`, mainMenu());
+      return;
+    }
+
+    state.history.push({ role: "assistant", content: answer });
+
+    if (isLastQuestion) {
+      // Blanка yaratildi — shifokorga yuborish
+      const doctorMatch = CLINIC.doctors.find(d =>
+        answer.includes(d.name) || answer.toLowerCase().includes(d.spec.toLowerCase())
+      );
+
+      send(chatId, `🤖 *AI Maslahatchi xulosasi:*\n\n${answer}`, {
+        parse_mode: "Markdown",
+        reply_markup: {
+          keyboard: [["📅 Qabulga yozilish"], ["🏠 Asosiy menyu"]],
+          resize_keyboard: true,
+        },
+      });
+
+      // Shifokorga yoki adminga blanка yuborish
+      const blankMsg =
+        `📋 *YANGI BEMOR — AI YO'LLANMA*\n\n` +
+        `👤 @${msg.from.username || msg.from.first_name}\n` +
+        `📅 ${new Date().toLocaleDateString('uz-UZ')}\n\n` +
+        `*Dastlabki belgilar:* ${state.symptoms}\n\n` +
+        `*AI xulosasi:*\n${answer}`;
+
+      if (doctorMatch) {
+        notifyDoctor(doctorMatch.id, blankMsg);
+      } else {
+        notifyAdmin(blankMsg);
+      }
+
+      userState[chatId] = null;
+    } else {
+      send(chatId, `🤖 ${answer}`, cancelMenu());
     }
     return;
   }
@@ -384,13 +513,15 @@ Keyin bemorni qabulga yozilishga taklif qil.` : "Bitta qisqa savol ber."}`;
   if (state.step === "appt_doctor") {
     const n = parseInt(text);
     if (isNaN(n) || n < 1 || n > CLINIC.doctors.length) {
-      send(chatId, `⚠️ Iltimos 1 dan ${CLINIC.doctors.length} gacha raqam kiriting.`);
+      send(chatId, `⚠️ 1 dan ${CLINIC.doctors.length} gacha raqam kiriting.`);
       return;
     }
     state.doctor = CLINIC.doctors[n - 1];
     state.step = "appt_name";
     send(chatId,
-      `✅ *${state.doctor.name}* (${state.doctor.spec}) tanlandi.\n\nIsmingizni kiriting:`,
+      `✅ *${state.doctor.name}* (${state.doctor.spec}) tanlandi.\n\n` +
+      `📅 Jadval: ${state.doctor.schedule}\n\n` +
+      `Ismingizni kiriting:`,
       cancelMenu()
     );
     return;
@@ -402,7 +533,8 @@ Keyin bemorni qabulga yozilishga taklif qil.` : "Bitta qisqa savol ber."}`;
     send(chatId, `📞 Telefon raqamingizni kiriting:`, {
       reply_markup: {
         keyboard: [[{ text: "📱 Raqamni yuborish", request_contact: true }]],
-        resize_keyboard: true, one_time_keyboard: true,
+        resize_keyboard: true,
+        one_time_keyboard: true,
       },
     });
     return;
@@ -411,99 +543,86 @@ Keyin bemorni qabulga yozilishga taklif qil.` : "Bitta qisqa savol ber."}`;
   if (state.step === "appt_phone") {
     state.phone = text;
     state.step = "appt_date";
-    send(chatId, `📅 Qaysi kun kelmoqchisiz?\n_Masalan: Ertaga, 20-aprel_`, { parse_mode: "Markdown", reply_markup: { remove_keyboard: true } });
+    send(chatId,
+      `📅 Qaysi kun kelmoqchisiz?\n_Masalan: Ertaga, 20-aprel, Dushanba_`,
+      { parse_mode: "Markdown", reply_markup: { remove_keyboard: true } }
+    );
     return;
   }
 
   if (state.step === "appt_date") {
     state.date = text;
     state.step = "appt_time";
-    send(chatId, `⏰ Qaysi vaqt qulay?\n_Masalan: 10:00, Tushdan keyin_`, { parse_mode: "Markdown" });
+    send(chatId, `⏰ Qaysi vaqt qulay?\n_Masalan: 10:00, 14:30_`, { parse_mode: "Markdown" });
     return;
   }
 
   if (state.step === "appt_time") {
     state.time = text;
-
-    const summary =
+    send(chatId,
       `✅ *Qabul so'rovi yuborildi!*\n\n` +
       `👤 Bemor: ${state.patientName}\n` +
       `🩺 Shifokor: ${state.doctor.name} (${state.doctor.spec})\n` +
-      `📅 Kun: ${state.date}\n` +
-      `⏰ Vaqt: ${state.time}\n` +
+      `📅 Kun: ${state.date} — ⏰ ${state.time}\n` +
       `📞 Telefon: ${state.phone}\n\n` +
       `Operatorimiz tez orada tasdiqlash uchun bog'lanadi.\n` +
-      `📞 ${CLINIC.phone}`;
-
-    send(chatId, summary, mainMenu());
-
-    const adminText =
-      `🔔 *YANGI QABUL SO'ROVI*\n\n` +
-      `👤 ${state.patientName}\n` +
-      `📞 ${state.phone}\n` +
+      `📞 ${CLINIC.phone}`,
+      mainMenu()
+    );
+    notifyDoctor(state.doctor.id,
+      `🔔 *YANGI QABUL*\n\n` +
+      `👤 ${state.patientName}\n📞 ${state.phone}\n` +
       `🩺 ${state.doctor.name} (${state.doctor.spec})\n` +
       `📅 ${state.date} — ⏰ ${state.time}\n` +
-      `🆔 @${msg.from.username || msg.from.first_name}`;
-
-    notifyDoctor(state.doctor.id, adminText);
+      `🆔 @${msg.from.username || msg.from.first_name}`
+    );
     userState[chatId] = null;
     return;
-  }
-
-  // Asosiy menyu
-  if (text === "🏠 Asosiy menyu") {
-    userState[chatId] = null;
-    send(chatId, "Asosiy menyu:", mainMenu());
   }
 });
 
 // ─── CONTACT ─────────────────────────────────────────────────────────────────
 bot.on("contact", (msg) => {
-  const chatId = msg.chat.id;
-  const state = userState[chatId];
+  const state = userState[msg.chat.id];
   if (state?.step === "appt_phone") {
     state.phone = msg.contact.phone_number;
     state.step = "appt_date";
-    send(chatId, `📅 Qaysi kun kelmoqchisiz?\n_Masalan: Ertaga, 20-aprel_`, {
-      parse_mode: "Markdown",
-      reply_markup: { remove_keyboard: true },
-    });
+    send(msg.chat.id,
+      `📅 Qaysi kun kelmoqchisiz?\n_Masalan: Ertaga, 20-aprel_`,
+      { parse_mode: "Markdown", reply_markup: { remove_keyboard: true } }
+    );
   }
 });
 
-// ─── WEBHOOK yoki POLLING ─────────────────────────────────────────────────────
+// ─── POLLING ERROR ────────────────────────────────────────────────────────────
+bot.on("polling_error", (err) => console.error("Polling error:", err.message));
+
+// ─── SERVER ───────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 
 if (WEBHOOK_URL) {
-  const webhookPath = `/webhook/${TOKEN}`;
-  bot.setWebHook(`${WEBHOOK_URL}${webhookPath}`).then(() => {
-    console.log("✅ Webhook o'rnatildi:", WEBHOOK_URL + webhookPath);
-  });
+  const path = `/webhook/${TOKEN}`;
+  bot.setWebHook(`${WEBHOOK_URL}${path}`).then(() => {
+    console.log("✅ Webhook o'rnatildi");
+  }).catch(e => console.error("Webhook error:", e.message));
 
   http.createServer((req, res) => {
-    if (req.method === "POST" && req.url === webhookPath) {
+    if (req.method === "POST" && req.url === path) {
       let body = "";
-      req.on("data", (c) => (body += c));
+      req.on("data", c => (body += c));
       req.on("end", () => {
-        try {
-          const update = JSON.parse(body);
-          bot.processUpdate(update);
-        } catch(e) {
-          console.error("Webhook parse error:", e.message);
-        }
+        try { bot.processUpdate(JSON.parse(body)); } catch(e) {}
         res.end("OK");
       });
     } else {
-      res.end("Bot ishlayapdi ✅");
+      res.end(`${CLINIC.name} boti ishlayapdi ✅`);
     }
   }).listen(PORT, () => {
-    console.log(`✅ ${CLINIC.name} — Webhook rejimida (port: ${PORT})`);
+    console.log(`✅ ${CLINIC.name} — Webhook rejim (port: ${PORT})`);
     console.log(CLAUDE_KEY ? "🤖 Claude AI ulangan" : "⚠️ CLAUDE_API_KEY yo'q");
   });
 } else {
-  // Polling (local test uchun)
-  http.createServer((req, res) => res.end("Bot ishlayapdi ✅")).listen(PORT);
-  console.log(`✅ ${CLINIC.name} — Polling rejimida (port: ${PORT})`);
+  http.createServer((req, res) => res.end("OK")).listen(PORT);
+  console.log(`✅ ${CLINIC.name} — Polling rejim (port: ${PORT})`);
   console.log(CLAUDE_KEY ? "🤖 Claude AI ulangan" : "⚠️ CLAUDE_API_KEY yo'q");
-  bot.on("polling_error", (err) => console.error("Polling error:", err.message));
 }
